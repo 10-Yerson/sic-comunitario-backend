@@ -8,11 +8,17 @@ const AdminSchema = new mongoose.Schema({
     },
     apellido: {
         type: String,
-        required: false
+        required: true
     },
     fechaNacimiento: {
         type: Date,
         required: false 
+    },
+    cedula: {
+        type: String,
+        required: false,
+        unique: true,
+        sparse: true // permite varios null
     },
     genero: {
         type: String,

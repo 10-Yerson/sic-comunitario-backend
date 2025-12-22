@@ -5,7 +5,7 @@ const jwt = require('jsonwebtoken');
 const { jwtSecret, jwtExpire } = require('../config/jwt');
 
 exports.registerUser = async (req, res) => {
-    const { name, apellido, fechaNacimiento, genero, email, password } = req.body;
+    const { name, apellido, genero, email, password, cedula } = req.body;
 
     try {
         // Verifica si el usuario ya existe
@@ -22,8 +22,8 @@ exports.registerUser = async (req, res) => {
             email,
             password, // Guardamos la contraseña sin hash, el modelo se encarga de eso
             profile: {
-                fechaNacimiento,
-                genero
+                genero,
+                cedula
             }
         });
 
@@ -36,27 +36,37 @@ exports.registerUser = async (req, res) => {
 };
 
 exports.registerAdmin = async (req, res) => {
-    const { name, email, password } = req.body;
+    const { name, apellido, cedula, genero, email, password } = req.body;
 
     try {
-        // Verifica si el administrador ya existe
+        // Verificar si ya existe el admin
         const adminExists = await Admin.exists({ email });
         if (adminExists) {
-            return res.status(400).json({ msg: 'Admin already exists' });
+            return res.status(400).json({ msg: 'El administrador ya existe' });
         }
 
-        // Crear el nuevo administrador sin hacer el hash de la contraseña
+        // Crear admin
         const newAdmin = new Admin({
             name,
+            apellido,
+            cedula,
+            genero,
             email,
-            password // Guardamos la contraseña sin hash, el modelo se encarga de eso
+            password 
         });
 
         await newAdmin.save();
-        res.status(201).json({ msg: 'Admin registered successfully' });
+
+        res.status(201).json({
+            msg: 'Administrador registrado correctamente'
+        });
+
     } catch (err) {
         console.error(err);
-        res.status(500).json({ msg: 'Server error', error: err.message });
+        res.status(500).json({
+            msg: 'Error del servidor',
+            error: err.message
+        });
     }
 };
 
@@ -135,7 +145,7 @@ exports.logout = (req, res) => {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
-       });
+    });
     res.json({ msg: 'Logout exitoso' });
 };
 

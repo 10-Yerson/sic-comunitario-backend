@@ -27,7 +27,7 @@ exports.getAdminById = async (req, res) => {
 
 // Actualizar un Administrador
 exports.updateAdmin = async (req, res) => {
-    const { name, email, apellido, fechaNacimiento, genero } = req.body;
+    const { name, email, apellido, fechaNacimiento, genero, cedula } = req.body;
     try {
         const admin = await Admin.findById(req.params.id);
         if (!admin) {
@@ -37,6 +37,7 @@ exports.updateAdmin = async (req, res) => {
         // Actualizar solo los campos que se reciban en la solicitud
         admin.name = name || admin.name;
         admin.email = email || admin.email;
+        admin.cedula = cedula || admin.cedula
         admin.apellido = apellido || admin.apellido;
         admin.fechaNacimiento = fechaNacimiento || admin.fechaNacimiento;
         admin.genero = genero || admin.genero;

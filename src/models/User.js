@@ -35,7 +35,7 @@ const UserSchema = new mongoose.Schema({
         },
         fechaNacimiento: {
             type: Date,
-            required: true
+            required: false
         },
         genero: {
             type: String,
