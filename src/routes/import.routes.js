@@ -24,12 +24,6 @@ const upload = multer({
     }
 });
 
-/**
- * =========================
- * ADMIN ONLY
- * =========================
- */
-
 // Importar usuarios desde Excel (solo admin)
 router.post('/users', auth, authorize('admin'), upload.single('file'), importController.importUsers);
 

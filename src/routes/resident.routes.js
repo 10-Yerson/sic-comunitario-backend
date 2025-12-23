@@ -5,7 +5,7 @@ const residentController = require('../controllers/residentController');
 const { auth, authorize } = require('../middleware/authMiddleware');
 
 // Listar todos los residentes (solo admin)
-router.get('/', auth, authorize('admin'), residentController.getResidents);
+router.get('/', auth, authorize('admin', 'user'), residentController.getResidents);
 
 // Buscar residente por cédula (admin o user encargado)
 router.get('/cedula/:cedula', auth, authorize('admin', 'user'), residentController.getResidentByCedula);

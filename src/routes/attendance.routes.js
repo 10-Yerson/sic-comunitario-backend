@@ -4,6 +4,18 @@ const router = express.Router();
 const attendanceController = require('../controllers/attendanceController');
 const { auth, authorize } = require('../middleware/authMiddleware');
 
+/**
+ * =========================
+ * 📄 HISTORIAL POR CÉDULA (PÚBLICO)
+ * =========================
+ */
+
+// Ver historial de asistencia por cédula
+router.get(
+  '/history/cedula/:cedula',
+  attendanceController.getUserAttendanceHistoryByCedula
+);
+
 
 // USER (encargado)
  
