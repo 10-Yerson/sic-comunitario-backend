@@ -284,3 +284,227 @@ exports.generateInforme = async (event, attendances) => {
         }
     });
 };
+
+/**
+ * Generar HISTORIAL PÚBLICO de asistencia por cédula
+ */
+exports.generateHistorialPDF = async (user, attendances, stats) => {
+    return new Promise((resolve, reject) => {
+        try {
+            const doc = new PDFDocument({ margin: 50 });
+            const buffers = [];
+
+            doc.on('data', buffers.push.bind(buffers));
+            doc.on('end', () => {
+                const pdfData = Buffer.concat(buffers);
+                resolve(pdfData);
+            });
+
+            // Encabezado
+            doc.fontSize(22).font('Helvetica-Bold').text('HISTORIAL DE ASISTENCIA', { align: 'center' });
+            doc.moveDown(0.5);
+            doc.fontSize(10).font('Helvetica').fillColor('#666666')
+                .text('Registro de Participación en Eventos Comunitarios', { align: 'center' });
+            doc.fillColor('#000000');
+            doc.moveDown(2);
+
+            // Información del residente
+            doc.fontSize(14).font('Helvetica-Bold').text('Información del Residente');
+            doc.moveDown(0.5);
+            
+            // Crear una tabla de información
+            const startY = doc.y;
+            doc.fontSize(10).font('Helvetica-Bold').text('Nombre:', 50, startY);
+            doc.font('Helvetica').text(`${user.name} ${user.apellido || ''}`, 150, startY);
+            
+            doc.font('Helvetica-Bold').text('Cédula:', 50, startY + 15);
+            doc.font('Helvetica').text(user.cedula, 150, startY + 15);
+            
+            if (user.lote) {
+                doc.font('Helvetica-Bold').text('Lote:', 50, startY + 30);
+                doc.font('Helvetica').text(user.lote, 150, startY + 30);
+            }
+            
+            if (user.email) {
+                doc.font('Helvetica-Bold').text('Email:', 50, startY + 45);
+                doc.font('Helvetica').text(user.email, 150, startY + 45);
+            }
+            
+            doc.moveDown(4);
+            doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke();
+            doc.moveDown();
+
+            // Resumen Estadístico
+            doc.fontSize(14).font('Helvetica-Bold').text('Resumen Estadístico');
+            doc.moveDown(0.5);
+            
+            const statsY = doc.y;
+            const col1X = 50;
+            const col2X = 200;
+            const col3X = 380;
+            
+            // Primera fila
+            doc.fontSize(10).font('Helvetica-Bold').text('Total de Eventos:', col1X, statsY);
+            doc.font('Helvetica').text(stats.totalEventos.toString(), col1X + 100, statsY);
+            
+            doc.font('Helvetica-Bold').text('Reuniones:', col2X, statsY);
+            doc.font('Helvetica').text(stats.reuniones.toString(), col2X + 70, statsY);
+            
+            doc.font('Helvetica-Bold').text('Trabajos:', col3X, statsY);
+            doc.font('Helvetica').text(stats.trabajos.toString(), col3X + 70, statsY);
+            
+            // Segunda fila
+            doc.font('Helvetica-Bold').text('Asistencias:', col1X, statsY + 20);
+            doc.font('Helvetica').fillColor('#28a745').text(stats.asistencias.toString(), col1X + 100, statsY + 20);
+            doc.fillColor('#000000');
+            
+            doc.font('Helvetica-Bold').text('Faltas:', col2X, statsY + 20);
+            doc.font('Helvetica').fillColor('#dc3545').text(stats.faltas.toString(), col2X + 70, statsY + 20);
+            doc.fillColor('#000000');
+            
+            doc.font('Helvetica-Bold').text('Justificadas:', col3X, statsY + 20);
+            doc.font('Helvetica').fillColor('#ffc107').text(stats.justificadas.toString(), col3X + 70, statsY + 20);
+            doc.fillColor('#000000');
+            
+            // Porcentaje de asistencia
+            doc.moveDown(3);
+            doc.fontSize(12).font('Helvetica-Bold').text('Porcentaje de Asistencia: ');
+            const percentage = parseFloat(stats.porcentajeAsistencia);
+            let color = '#28a745'; // Verde por defecto
+            if (percentage < 50) color = '#dc3545'; // Rojo
+            else if (percentage < 75) color = '#ffc107'; // Amarillo
+            
+            doc.fillColor(color).fontSize(14).text(`${stats.porcentajeAsistencia}%`, { continued: false });
+            doc.fillColor('#000000');
+            
+            doc.moveDown();
+            doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke();
+            doc.moveDown();
+
+            // Detalle de Asistencias
+            doc.fontSize(14).font('Helvetica-Bold').text('Historial Detallado de Eventos');
+            doc.moveDown(0.5);
+
+            if (attendances.length === 0) {
+                doc.fontSize(10).font('Helvetica-Oblique')
+                    .text('No hay registros de asistencia.', { align: 'center' });
+            } else {
+                attendances.forEach((att, index) => {
+                    // Verificar si necesitamos una nueva página
+                    if (doc.y > 700) {
+                        doc.addPage();
+                    }
+                    
+                    if (!att.event) return; // Skip si el evento fue eliminado
+                    
+                    const eventY = doc.y;
+                    
+                    // Número y título del evento
+                    doc.fontSize(11).font('Helvetica-Bold')
+                        .text(`${index + 1}. ${att.event.title}`, 50, eventY);
+                    doc.moveDown(0.3);
+                    
+                    // Tipo y fecha
+                    const typeLabel = att.event.type === 'reunion' ? 'Reunión' : 'Trabajo Comunitario';
+                    doc.fontSize(9).font('Helvetica')
+                        .text(`Tipo: ${typeLabel} | Fecha: ${new Date(att.event.date).toLocaleDateString('es-ES', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                        })}`);
+                    
+                    // Horario
+                    if (att.event.startTime) {
+                        doc.text(`Horario: ${att.event.startTime}${att.event.endTime ? ' - ' + att.event.endTime : ''}`);
+                    }
+                    
+                    // Lugar
+                    if (att.event.location) {
+                        doc.text(`Lugar: ${att.event.location}`);
+                    }
+                    
+                    // Estado de asistencia con color
+                    doc.font('Helvetica-Bold').text('Estado: ', { continued: true });
+                    
+                    let statusText = '';
+                    let statusColor = '#000000';
+                    
+                    switch (att.status) {
+                        case 'asistio':
+                            statusText = 'ASISTIÓ';
+                            statusColor = '#28a745';
+                            break;
+                        case 'falto':
+                            statusText = 'FALTÓ';
+                            statusColor = '#dc3545';
+                            break;
+                        case 'justificado':
+                            statusText = 'JUSTIFICADO';
+                            statusColor = '#ffc107';
+                            break;
+                        default:
+                            statusText = att.status.toUpperCase();
+                    }
+                    
+                    doc.fillColor(statusColor).font('Helvetica-Bold').text(statusText);
+                    doc.fillColor('#000000').font('Helvetica');
+                    
+                    // Horarios de llegada/salida
+                    if (att.arrivalTime) {
+                        doc.text(`Hora de llegada: ${att.arrivalTime}`);
+                    }
+                    if (att.departureTime) {
+                        doc.text(`Hora de salida: ${att.departureTime}`);
+                    }
+                    
+                    // Justificación si existe
+                    if (att.justification) {
+                        doc.fontSize(9).font('Helvetica-Oblique')
+                            .text(`Justificación: ${att.justification}`, { indent: 10 });
+                        doc.font('Helvetica');
+                    }
+                    
+                    // Notas si existen
+                    if (att.notes) {
+                        doc.fontSize(9).font('Helvetica-Oblique')
+                            .text(`Notas: ${att.notes}`, { indent: 10 });
+                        doc.font('Helvetica');
+                    }
+                    
+                    // Organizador
+                    if (att.event.organizer) {
+                        doc.fontSize(9).text(`Organizado por: ${att.event.organizer.name} ${att.event.organizer.apellido || ''}`);
+                    }
+                    
+                    doc.moveDown(0.5);
+                    
+                    // Línea separadora
+                    if (index < attendances.length - 1) {
+                        doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke('#cccccc');
+                        doc.moveDown(0.5);
+                    }
+                });
+            }
+
+            // Footer en todas las páginas
+            const range = doc.bufferedPageRange();
+            for (let i = range.start; i < range.start + range.count; i++) {
+                doc.switchToPage(i);
+                
+                doc.fontSize(8).fillColor('#666666')
+                    .text(
+                        `Página ${i + 1} de ${range.count} | Generado el ${new Date().toLocaleString('es-ES')}`,
+                        50,
+                        doc.page.height - 50,
+                        { align: 'center', width: doc.page.width - 100 }
+                    );
+                
+                doc.fillColor('#000000');
+            }
+
+            doc.end();
+        } catch (error) {
+            reject(error);
+        }
+    });
+};

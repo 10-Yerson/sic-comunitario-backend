@@ -1,7 +1,7 @@
 // src/controllers/reportController.js
 const Event = require('../models/Event');
 const Attendance = require('../models/Attendance');
-const { generateActa, generateInforme } = require('../utils/pdfGenerator');
+const { generateActa, generateInforme, generateHistorialPDF } = require('../utils/pdfGenerator');
 
 /**
  * Generar PDF de un evento (acta o informe)
@@ -172,5 +172,63 @@ exports.generateUserReport = async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).json({ msg: 'Error generando reporte', error: err.message });
+    }
+};
+
+/**
+ * Generar PDF público del historial de asistencia por cédula
+ * NO REQUIERE AUTENTICACIÓN - Endpoint público
+ */
+exports.generatePublicReportByCedula = async (req, res) => {
+    try {
+        const { cedula } = req.params;
+
+        // Buscar residente por cédula
+        const Resident = require('../models/Resident');
+        const resident = await Resident.findOne({ cedula: cedula })
+            .select('name apellido email cedula lote profilePicture');
+
+        if (!resident) {
+            return res.status(404).json({ msg: 'No se encontró ningún residente con esa cédula' });
+        }
+
+        // Obtener todas las asistencias del residente
+        const attendances = await Attendance.find({ user: resident._id })
+            .populate('event', 'title type date startTime endTime location organizer')
+            .populate({
+                path: 'event',
+                populate: {
+                    path: 'organizer',
+                    select: 'name apellido'
+                }
+            })
+            .sort({ 'event.date': -1 }); // Más recientes primero
+
+        // Calcular estadísticas
+        const stats = {
+            totalEventos: attendances.length,
+            reuniones: attendances.filter(a => a.event && a.event.type === 'reunion').length,
+            trabajos: attendances.filter(a => a.event && a.event.type === 'trabajo').length,
+            asistencias: attendances.filter(a => a.status === 'asistio').length,
+            faltas: attendances.filter(a => a.status === 'falto').length,
+            justificadas: attendances.filter(a => a.status === 'justificado').length,
+            porcentajeAsistencia: attendances.length > 0
+                ? ((attendances.filter(a => a.status === 'asistio').length / attendances.length) * 100).toFixed(2)
+                : 0
+        };
+
+        // Generar PDF
+        const pdfBuffer = await generateHistorialPDF(resident, attendances, stats);
+
+        // Enviar PDF
+        const filename = `Historial_${resident.name}_${resident.apellido}_${cedula}_${new Date().toISOString().split('T')[0]}.pdf`;
+
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        res.send(pdfBuffer);
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ msg: 'Error generando historial público', error: err.message });
     }
 };

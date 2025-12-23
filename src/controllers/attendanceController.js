@@ -57,6 +57,7 @@ exports.registerAttendance = async (req, res) => {
 
 /**
  * Registrar asistencia masiva (múltiples residentes)
+ * Ahora actualiza si ya existe en lugar de rechazar
  */
 exports.registerBulkAttendance = async (req, res) => {
     const { eventId, attendances } = req.body;
@@ -74,47 +75,103 @@ exports.registerBulkAttendance = async (req, res) => {
         }
         
         const results = {
-            success: [],
+            created: [],
+            updated: [],
             errors: []
         };
         
+        // 🔍 DEBUG
+        console.log(`\n📊 Procesando ${attendances.length} asistencias para evento: ${eventId}`);
+        
         for (const att of attendances) {
             try {
-                // Verificar si ya existe
-                const existing = await Attendance.findOne({ event: eventId, user: att.residentId });
-                if (existing) {
-                    results.errors.push({ residentId: att.residentId, msg: 'Ya existe un registro' });
-                    continue;
-                }
+                console.log(`\n👤 Residente: ${att.residentId} | Status: "${att.status}"`);
                 
-                const attendance = new Attendance({
-                    event: eventId,
-                    user: att.residentId,
-                    status: att.status || 'asistio',
-                    arrivalTime: att.arrivalTime,
-                    departureTime: att.departureTime,
-                    justification: att.justification,
-                    notes: att.notes,
-                    registeredBy: req.user.id,
-                    registeredByModel: req.user.role === 'admin' ? 'Admin' : 'User'
+                // Verificar si ya existe
+                const existing = await Attendance.findOne({ 
+                    event: eventId, 
+                    user: att.residentId 
                 });
                 
-                await attendance.save();
-                results.success.push(att.residentId);
+                if (existing) {
+                    // ✅ ACTUALIZAR el registro existente
+                    console.log(`   ⚠️  Ya existe, actualizando...`);
+                    
+                    existing.status = att.status || 'asistio';
+                    existing.arrivalTime = att.arrivalTime || existing.arrivalTime;
+                    existing.departureTime = att.departureTime || existing.departureTime;
+                    existing.justification = att.justification || '';
+                    existing.notes = att.notes || existing.notes;
+                    existing.registeredBy = req.user.id;
+                    existing.registeredByModel = req.user.role === 'admin' ? 'Admin' : 'User';
+                    
+                    await existing.save();
+                    
+                    console.log(`   ✅ Actualizado: status="${existing.status}"`);
+                    results.updated.push({
+                        residentId: att.residentId,
+                        status: existing.status
+                    });
+                    
+                } else {
+                    // ✅ CREAR nuevo registro
+                    console.log(`   🆕 Creando nuevo registro...`);
+                    
+                    const attendance = new Attendance({
+                        event: eventId,
+                        user: att.residentId,
+                        status: att.status || 'asistio',
+                        arrivalTime: att.arrivalTime,
+                        departureTime: att.departureTime,
+                        justification: att.justification,
+                        notes: att.notes,
+                        registeredBy: req.user.id,
+                        registeredByModel: req.user.role === 'admin' ? 'Admin' : 'User'
+                    });
+                    
+                    await attendance.save();
+                    
+                    console.log(`   ✅ Creado: status="${attendance.status}"`);
+                    results.created.push({
+                        residentId: att.residentId,
+                        status: attendance.status
+                    });
+                }
+                
             } catch (err) {
-                results.errors.push({ residentId: att.residentId, msg: err.message });
+                console.error(`   ❌ Error: ${err.message}`);
+                results.errors.push({ 
+                    residentId: att.residentId, 
+                    msg: err.message 
+                });
             }
         }
         
+        // 📊 Resumen final
+        console.log(`\n📋 RESUMEN FINAL:`);
+        console.log(`   🆕 Creados: ${results.created.length}`);
+        console.log(`   🔄 Actualizados: ${results.updated.length}`);
+        console.log(`   ❌ Errores: ${results.errors.length}`);
+        
+        // Verificar lo que quedó guardado en la BD
+        const finalCount = await Attendance.countDocuments({ event: eventId });
+        console.log(`   💾 Total en BD: ${finalCount}\n`);
+        
         res.json({ 
             msg: 'Proceso completado',
-            registered: results.success.length,
+            created: results.created.length,
+            updated: results.updated.length,
             errors: results.errors.length,
+            total: results.created.length + results.updated.length,
             details: results
         });
+        
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ msg: 'Error del servidor' });
+        console.error('❌ Error del servidor:', err);
+        res.status(500).json({ 
+            msg: 'Error del servidor', 
+            error: err.message 
+        });
     }
 };
 
@@ -235,6 +292,41 @@ exports.deleteAttendance = async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).json({ msg: 'Error del servidor' });
+    }
+};
+
+/**
+ * Eliminar TODAS las asistencias de un evento
+ * Útil para resetear y volver a registrar
+ */
+exports.deleteEventAttendances = async (req, res) => {
+    try {
+        const { eventId } = req.params;
+        
+        // Verificar que el evento existe
+        const event = await Event.findById(eventId);
+        if (!event) {
+            return res.status(404).json({ msg: 'Evento no encontrado' });
+        }
+        
+        // VALIDAR PERMISOS
+        if (req.user.role === 'user' && event.organizer.toString() !== req.user.id) {
+            return res.status(403).json({ msg: 'Solo puedes eliminar asistencias de tus eventos' });
+        }
+        
+        // Eliminar todas las asistencias del evento
+        const result = await Attendance.deleteMany({ event: eventId });
+        
+        console.log(`🗑️  Eliminadas ${result.deletedCount} asistencias del evento ${eventId}`);
+        
+        res.json({ 
+            msg: 'Asistencias eliminadas correctamente',
+            deleted: result.deletedCount
+        });
+        
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ msg: 'Error al eliminar asistencias' });
     }
 };
 

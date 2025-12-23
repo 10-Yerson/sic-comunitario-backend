@@ -6,6 +6,15 @@ const { auth, authorize } = require('../middleware/authMiddleware');
 
 /**
  * =========================
+ * PÚBLICO (sin autenticación)
+ * =========================
+ */
+
+// Generar PDF público del historial por cédula
+router.get('/public/cedula/:cedula', reportController.generatePublicReportByCedula);
+
+/**
+ * =========================
  * USER (encargado)
  * =========================
  */

@@ -19,6 +19,12 @@ router.get(
 
 // USER (encargado)
  
+// Obtener asistencias de un evento (para verificar)
+router.get('/event/:eventId', auth, attendanceController.getEventAttendances);
+
+// Eliminar todas las asistencias de un evento (para resetear)
+router.delete('/event/:eventId', auth, authorize('user'), attendanceController.deleteEventAttendances);
+
 // Registrar asistencia en MIS eventos
 router.post('/', auth, authorize('user'), attendanceController.registerAttendance);
 
