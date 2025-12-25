@@ -1,4 +1,3 @@
-// src/models/Event.js - Con imagen/video de portada
 const mongoose = require('mongoose');
 
 const EventSchema = new mongoose.Schema({

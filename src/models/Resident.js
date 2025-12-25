@@ -1,4 +1,3 @@
-// src/models/Resident.js - Vecinos/Residentes (NO hacen login)
 const mongoose = require('mongoose');
 
 const ResidentSchema = new mongoose.Schema({
@@ -14,12 +13,12 @@ const ResidentSchema = new mongoose.Schema({
         type: String,
         required: true,
         unique: true,
-        index: true // Índice para búsquedas rápidas por cédula
+        index: true 
     },
     email: {
         type: String,
-        required: false, // Opcional
-        sparse: true // Permite que sea null sin conflictos
+        required: false, 
+        sparse: true 
     },
     fechaNacimiento: {
         type: Date,
@@ -40,8 +39,8 @@ const ResidentSchema = new mongoose.Schema({
     },
     password: {
         type: String,
-        required: false,  // ← Cambiar a false
-        default: 'sin-acceso-123'  // ← Contraseña por defecto
+        required: false,  
+        default: 'sin-acceso-123' 
     },
     lote: {
         type: String,

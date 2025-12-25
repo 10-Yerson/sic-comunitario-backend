@@ -1,4 +1,3 @@
-// src/models/User.js - VERSIÓN ADAPTADA PARA SIC
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
@@ -25,13 +24,12 @@ const UserSchema = new mongoose.Schema({
         default: 'https://res.cloudinary.com/dbgj8dqup/image/upload/v1743182322/uploads/ixv6tw8jfbhykflcmyex.png'
     },
     
-    // Información personal básica
     profile: {
         cedula: {
             type: String,
             required: false,
             unique: true,
-            sparse: true // Permite múltiples valores null
+            sparse: true 
         },
         fechaNacimiento: {
             type: Date,
@@ -50,7 +48,6 @@ const UserSchema = new mongoose.Schema({
             type: String,
             required: false
         },
-        // Lote o casa donde vive en la comunidad
         lote: {
             type: String,
             required: false
@@ -63,7 +60,6 @@ const UserSchema = new mongoose.Schema({
         default: 'user'
     },
     
-    // Estado del usuario
     isActive: {
         type: Boolean,
         default: true

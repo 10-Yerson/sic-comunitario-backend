@@ -4,20 +4,10 @@ const router = express.Router();
 const reportController = require('../controllers/reportController');
 const { auth, authorize } = require('../middleware/authMiddleware');
 
-/**
- * =========================
- * PÚBLICO (sin autenticación)
- * =========================
- */
 
-// Generar PDF público del historial por cédula
+// Generar PDF público del historial por cédula (publico)
 router.get('/public/cedula/:cedula', reportController.generatePublicReportByCedula);
 
-/**
- * =========================
- * USER (encargado)
- * =========================
- */
 
 // Generar PDF de MIS eventos (acta o informe)
 router.get('/event/:eventId/pdf', auth, authorize('user'), reportController.generateEventPDF);
@@ -28,11 +18,6 @@ router.get('/general', auth, authorize('user'), reportController.generateGeneral
 // Ver MI propio reporte de asistencia
 router.get('/my-report', auth, authorize('user'), reportController.generateUserReport);
 
-/**
- * =========================
- * ADMIN
- * =========================
- */
 
 // Admin puede hacer todo lo del USER + ver reportes de cualquier usuario
 router.get('/admin/event/:eventId/pdf', auth, authorize('admin'), reportController.generateEventPDF);

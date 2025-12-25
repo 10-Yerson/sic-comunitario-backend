@@ -7,11 +7,12 @@ const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage() });
 
 // Rutas para administradores
-router.get('/', auth, authorize('admin'), adminController.getAdmin); // Solo accesible para administradores
-router.get('/:id', auth, authorize('admin'), adminController.getAdminById); // Solo accesible para administradores
-router.put('/:id', auth, authorize('admin'), adminController.updateAdmin); // Solo accesible para administradores
-router.delete('/:id', auth, authorize('admin'), adminController.deleteAdmin); // Solo accesible para administradores
+router.get('/profile/me', auth, authorize('admin'), adminController.getMyProfile);
+router.get('/', auth, authorize('admin'), adminController.getAdmin); 
+router.get('/:id', auth, authorize('admin'), adminController.getAdminById); 
+router.put('/:id', auth, authorize('admin'), adminController.updateAdmin);
+router.delete('/:id', auth, authorize('admin'), adminController.deleteAdmin);
 
-// Ruta para actualizar la imagen de perfil
-router.put('/profile/:id', auth, authorize('admin'), upload.single('profileUrl'), adminController.uploadProfilePicture);
+// Ruta para actualizar la imagen de perfilz
+router.put('/profile/me', auth, authorize('admin'), upload.single('profileUrl'), adminController.uploadProfilePicture);
 module.exports = router;

@@ -4,16 +4,9 @@ const router = express.Router();
 const attendanceController = require('../controllers/attendanceController');
 const { auth, authorize } = require('../middleware/authMiddleware');
 
-/**
- * =========================
- * 📄 HISTORIAL POR CÉDULA (PÚBLICO)
- * =========================
- */
 
-// Ver historial de asistencia por cédula
-router.get(
-  '/history/cedula/:cedula',
-  attendanceController.getUserAttendanceHistoryByCedula
+// Ver historial de asistencia por cédula (Publico)
+router.get('/history/cedula/:cedula',attendanceController.getUserAttendanceHistoryByCedula
 );
 
 
@@ -49,8 +42,6 @@ router.post('/admin/bulk', auth, authorize('admin'), attendanceController.regist
 router.get('/admin/event/:eventId', auth, authorize('admin'), attendanceController.getEventAttendances);
 router.get('/admin/user/:userId', auth, authorize('admin'), attendanceController.getUserAttendanceHistory);
 router.put('/admin/:id', auth, authorize('admin'), attendanceController.updateAttendance);
-
-// Solo admin puede eliminar
 router.delete('/:id', auth, authorize('admin'), attendanceController.deleteAttendance);
 
 module.exports = router;

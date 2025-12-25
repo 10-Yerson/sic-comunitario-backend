@@ -96,20 +96,54 @@ exports.uploadProfilePicture = async (req, res) => {
         // Subir archivo a Cloudinary
         const result = await uploadToCloudinary(req.file);
 
-        // Actualizar la URL de la imagen en el perfil del administrador
-        const admin = await Admin.findById(req.params.id);
+        // Actualizar solo la foto
+        const admin = await Admin.findByIdAndUpdate(
+            req.user.id,
+            { profileUrl: result.secure_url },
+            { new: true }
+        );
+
         if (!admin) {
             return res.status(404).json({ msg: 'Admin not found' });
         }
-
-        admin.profileUrl = result.secure_url;
-        await admin.save();
 
         res.json({
             msg: 'Profile picture updated successfully',
             profilePicture: result.secure_url
         });
+
     } catch (error) {
-        res.status(500).json({ error: 'Error uploading profile picture' });
+        console.error(error);
+        res.status(500).json({ msg: 'Error uploading profile picture' });
     }
 };
+
+
+// Obtener el perfil del Admin logueado
+exports.getMyProfile = async (req, res) => {
+    try {
+        const admin = await Admin.findById(req.user.id);
+
+        if (!admin) {
+            return res.status(404).json({ msg: 'Admin not found' });
+        }
+
+        res.json({
+            _id: admin._id,
+            name: admin.name,
+            apellido: admin.apellido,
+            email: admin.email,
+            cedula: admin.cedula,
+            genero: admin.genero,
+            profileUrl: admin.profileUrl,
+            role: admin.role,
+            createdAt: admin.createdAt,
+            updatedAt: admin.updatedAt
+        });
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ msg: 'Server error' });
+    }
+};
+

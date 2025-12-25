@@ -6,8 +6,6 @@ const { auth, authorize } = require('../middleware/authMiddleware');
 const upload = require('../config/multer');
 
 
-// 🌐 RUTAS PÚBLICAS (Sin autenticación)
- 
 // Ver detalle de cualquier evento (público)
 router.get('/public/:id', eventController.getPublicEventById);
 
@@ -15,19 +13,12 @@ router.get('/public/:id', eventController.getPublicEventById);
 router.get('/public', eventController.getPublicEvents);
 
 
-// USER (encargado)
-
 // Crear evento con imagen/video opcional
 router.post('/', auth,authorize('user'), upload.single('media'),eventController.createEvent);
-
 // Ver MIS eventos
 router.get('/my', auth, authorize('user'), eventController.getMyEvents);
-
 // Actualizar MI evento (puede incluir nuevo archivo)
-router.put('/:id',auth, authorize('user'), 
-    upload.single('media'), // 👈 Opcional: cambiar imagen/video
-    eventController.updateEvent
-);
+router.put('/:id',auth, authorize('user'), upload.single('media'), eventController.updateEvent);
 
 // Eliminar imagen/video de MI evento
 router.delete('/:id/media', auth, authorize('user'), eventController.deleteEventMedia);
@@ -40,10 +31,8 @@ router.patch('/:id/status', auth, authorize('user'), eventController.changeEvent
 
 // Ver TODOS los eventos
 router.get('/', auth, authorize('admin'), eventController.getEvents);
-
 // Ver evento por ID (admin y user)
 router.get('/:id', auth, authorize('admin', 'user'), eventController.getEventById);
-
 // Eliminar evento (solo admin)
 router.delete('/:id', auth, authorize('admin'), eventController.deleteEvent);
 
