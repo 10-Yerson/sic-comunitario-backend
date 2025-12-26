@@ -80,23 +80,15 @@ exports.registerBulkAttendance = async (req, res) => {
             errors: []
         };
         
-        // 🔍 DEBUG
-        console.log(`\n📊 Procesando ${attendances.length} asistencias para evento: ${eventId}`);
-        
         for (const att of attendances) {
             try {
-                console.log(`\n👤 Residente: ${att.residentId} | Status: "${att.status}"`);
-                
-                // Verificar si ya existe
                 const existing = await Attendance.findOne({ 
                     event: eventId, 
                     user: att.residentId 
                 });
                 
                 if (existing) {
-                    // ✅ ACTUALIZAR el registro existente
-                    console.log(`   ⚠️  Ya existe, actualizando...`);
-                    
+                    // ACTUALIZAR registro existente
                     existing.status = att.status || 'asistio';
                     existing.arrivalTime = att.arrivalTime || existing.arrivalTime;
                     existing.departureTime = att.departureTime || existing.departureTime;
@@ -107,16 +99,13 @@ exports.registerBulkAttendance = async (req, res) => {
                     
                     await existing.save();
                     
-                    console.log(`   ✅ Actualizado: status="${existing.status}"`);
                     results.updated.push({
                         residentId: att.residentId,
                         status: existing.status
                     });
                     
                 } else {
-                    // ✅ CREAR nuevo registro
-                    console.log(`   🆕 Creando nuevo registro...`);
-                    
+                    // CREAR nuevo registro
                     const attendance = new Attendance({
                         event: eventId,
                         user: att.residentId,
@@ -131,7 +120,6 @@ exports.registerBulkAttendance = async (req, res) => {
                     
                     await attendance.save();
                     
-                    console.log(`   ✅ Creado: status="${attendance.status}"`);
                     results.created.push({
                         residentId: att.residentId,
                         status: attendance.status
@@ -139,23 +127,12 @@ exports.registerBulkAttendance = async (req, res) => {
                 }
                 
             } catch (err) {
-                console.error(`   ❌ Error: ${err.message}`);
                 results.errors.push({ 
                     residentId: att.residentId, 
                     msg: err.message 
                 });
             }
         }
-        
-        // 📊 Resumen final
-        console.log(`\n📋 RESUMEN FINAL:`);
-        console.log(`   🆕 Creados: ${results.created.length}`);
-        console.log(`   🔄 Actualizados: ${results.updated.length}`);
-        console.log(`   ❌ Errores: ${results.errors.length}`);
-        
-        // Verificar lo que quedó guardado en la BD
-        const finalCount = await Attendance.countDocuments({ event: eventId });
-        console.log(`   💾 Total en BD: ${finalCount}\n`);
         
         res.json({ 
             msg: 'Proceso completado',
@@ -167,13 +144,13 @@ exports.registerBulkAttendance = async (req, res) => {
         });
         
     } catch (err) {
-        console.error('❌ Error del servidor:', err);
         res.status(500).json({ 
             msg: 'Error del servidor', 
             error: err.message 
         });
     }
 };
+
 
 /**
  * Obtener asistencias de un evento específico
