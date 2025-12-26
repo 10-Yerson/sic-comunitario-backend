@@ -20,14 +20,14 @@ app.use(cookieParser());
 // Middleware de CORS 
 app.use(cors({
   origin: process.env.FRONTEND_URL, // Permitir solicitudes desde el frontend
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],// Permitir estos métodos
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],// Permitir estos métodos
   allowedHeaders: ["Content-Type", "Authorization"], // Permitir estos headers
   credentials: true // Permitir cookies y autenticación
 }));
 
 app.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", process.env.FRONTEND_URL);
-  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS"); // Asegurar que incluya OPTIONS
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS", "PATCH"); // Asegurar que incluya OPTIONS
   res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
   res.header("Access-Control-Allow-Credentials", "true");
 

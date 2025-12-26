@@ -137,43 +137,83 @@ exports.deleteUser = async (req, res) => {
     }
 };
 
-// Subir imagen de perfil
+// Subir imagen de perfil (USER)
 exports.uploadProfilePicture = async (req, res) => {
-    try {
-        if (!req.file) {
-            return res.status(400).json({ msg: 'No se ha enviado ningún archivo' });
-        }
-
-        const user = await User.findById(req.params.id);
-        if (!user) {
-            return res.status(404).json({ msg: 'Usuario no encontrado' });
-        }
-
-        const oldImageUrl = user.profilePicture;
-
-        // Subir nueva imagen a Cloudinary
-        const result = await uploadToCloudinary(req.file);
-
-        // Si la imagen anterior no es la predeterminada, eliminarla
-        const defaultUrl = 'https://res.cloudinary.com/dbgj8dqup/image/upload/v1743182322/uploads/ixv6tw8jfbhykflcmyex.png';
-        if (oldImageUrl && oldImageUrl !== defaultUrl) {
-            const publicId = getPublicIdFromUrl(oldImageUrl);
-            await cloudinary.uploader.destroy(publicId);
-        }
-
-        // Actualizar nueva imagen en el usuario
-        user.profilePicture = result.secure_url;
-        await user.save();
-
-        res.json({
-            msg: 'Imagen de perfil actualizada con éxito',
-            profilePicture: result.secure_url
-        });
-    } catch (error) {
-        console.error("Error en el backend:", error);
-        res.status(500).json({ error: 'Error subiendo imagen de perfil' });
+  try {
+    if (!req.file) {
+      return res.status(400).json({ msg: 'No se ha enviado ningún archivo' });
     }
+
+    // Traer usuario autenticado
+    const user = await User.findById(req.user.id);
+
+    if (!user) {
+      return res.status(404).json({ msg: 'Usuario no encontrado' });
+    }
+
+    const oldImageUrl = user.profilePicture;
+
+    // Subir nueva imagen a Cloudinary
+    const result = await uploadToCloudinary(req.file);
+
+    // URL por defecto
+    const defaultUrl =
+      'https://res.cloudinary.com/dbgj8dqup/image/upload/v1743182322/uploads/ixv6tw8jfbhykflcmyex.png';
+
+    // Si la imagen anterior no es la predeterminada → eliminarla
+    if (oldImageUrl && oldImageUrl !== defaultUrl) {
+      const publicId = getPublicIdFromUrl(oldImageUrl);
+      await cloudinary.uploader.destroy(publicId);
+    }
+
+    // Guardar nueva imagen
+    user.profilePicture = result.secure_url;
+    await user.save();
+
+    res.json({
+      msg: 'Imagen de perfil actualizada con éxito',
+      profilePicture: result.secure_url
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error subiendo imagen de perfil' });
+  }
 };
+
+exports.getMyProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+
+    if (!user) {
+      return res.status(404).json({ msg: 'Usuario no encontrado' });
+    }
+
+    res.json({
+      id: user._id,
+      name: user.name,
+      apellido: user.apellido,
+      email: user.email,
+      profilePicture: user.profilePicture,
+      role: user.role,
+      isActive: user.isActive,
+      profile: {
+        cedula: user.profile?.cedula || null,
+        genero: user.profile?.genero || null,
+        telefono: user.profile?.telefono || null,
+        direccion: user.profile?.direccion || null,
+        lote: user.profile?.lote || null
+      },
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ msg: 'Error obteniendo perfil' });
+  }
+};
+
 
 // Eliminar imagen de perfil
 exports.deleteProfilePicture = async (req, res) => {

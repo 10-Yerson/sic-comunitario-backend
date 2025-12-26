@@ -11,9 +11,6 @@ router.get('/history/cedula/:cedula',attendanceController.getUserAttendanceHisto
 
 
 // USER (encargado)
- 
-// Obtener asistencias de un evento (para verificar)
-router.get('/event/:eventId', auth, attendanceController.getEventAttendances);
 
 // Eliminar todas las asistencias de un evento (para resetear)
 router.delete('/event/:eventId', auth, authorize('user'), attendanceController.deleteEventAttendances);
