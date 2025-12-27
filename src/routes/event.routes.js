@@ -12,6 +12,11 @@ router.get('/public/:id', eventController.getPublicEventById);
 // Ver TODOS los eventos (público)
 router.get('/public', eventController.getPublicEvents);
 
+// Eventos publicos mejorado
+router.get('/comunity', eventController.getEvents);
+
+// Ver evento por ID (admin y user)
+router.get('/comunity/:id', eventController.getEventById);
 
 // Crear evento con imagen/video opcional
 router.post('/', auth,authorize('user'), upload.single('media'),eventController.createEvent);
