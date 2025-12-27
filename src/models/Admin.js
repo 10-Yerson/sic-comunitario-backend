@@ -36,7 +36,7 @@ const AdminSchema = new mongoose.Schema({
     },
     profileUrl: {
         type: String,
-        default: 'https://res.cloudinary.com/dbgj8dqup/image/upload/v1725640005/uploads/ktsngfmjvjv094hygwsu.png' // URL por defecto
+        default: 'https://res.cloudinary.com/dbgj8dqup/image/upload/v1743182322/uploads/ixv6tw8jfbhykflcmyex.png' // URL por defecto
     },
     role: {
         type: String,

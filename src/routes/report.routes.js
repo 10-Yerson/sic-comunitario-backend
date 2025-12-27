@@ -10,7 +10,7 @@ router.get('/public/cedula/:cedula', reportController.generatePublicReportByCedu
 
 
 // Generar PDF de MIS eventos (acta o informe)
-router.get('/event/:eventId/pdf', auth, authorize('user'), reportController.generateEventPDF);
+router.get('/event/:eventId/pdf', auth, authorize('user', 'admin'), reportController.generateEventPDF);
 
 // Generar reporte general de MIS eventos
 router.get('/general', auth, authorize('user'), reportController.generateGeneralReport);

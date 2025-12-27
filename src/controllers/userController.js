@@ -3,6 +3,7 @@ const cloudinary = require('../config/cloudinary');
 const { Readable } = require('stream');
 const bcrypt = require('bcryptjs');
 const Attendance = require('../models/Attendance');
+const mongoose = require('mongoose');
 
 // Obtener todos los usuarios
 exports.getUsers = async (req, res) => {

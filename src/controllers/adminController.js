@@ -1,6 +1,7 @@
 const Admin = require('../models/Admin');
 const cloudinary = require('../config/cloudinary');
 const { Readable } = require('stream');
+const mongoose = require('mongoose');
 
 // Obtener todos los Administradores
 exports.getAdmin = async (req, res) => {
@@ -51,18 +52,26 @@ exports.updateAdmin = async (req, res) => {
 
 // Eliminar un Administrador
 exports.deleteAdmin = async (req, res) => {
-    try {
-        const admin = await Admin.findById(req.params.id);
-        if (!admin) {
-            return res.status(404).json({ msg: 'Admin not found' });
-        }
+  try {
 
-        await admin.remove();
-        res.json({ msg: 'Admin removed successfully' });
-    } catch (err) {
-        res.status(500).json({ msg: 'Server error' });
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ msg: 'Invalid admin id' });
     }
+
+    const admin = await Admin.findByIdAndDelete(req.params.id);
+
+    if (!admin) {
+      return res.status(404).json({ msg: 'Admin not found' });
+    }
+
+    res.json({ msg: 'Admin deleted successfully' });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ msg: 'Server error' });
+  }
 };
+
 
 
 // Función para subir archivos a Cloudinary

@@ -22,7 +22,7 @@ router.post('/', auth, authorize('user'), attendanceController.registerAttendanc
 router.post('/bulk', auth, authorize('user'), attendanceController.registerBulkAttendance);
 
 // Ver asistencias de MIS eventos
-router.get('/event/:eventId', auth, authorize('user'), attendanceController.getEventAttendances);
+router.get('/event/:eventId', auth, authorize('user','admin'), attendanceController.getEventAttendances);
 
 // Ver MI propio historial
 router.get('/my-history', auth, authorize('user'), attendanceController.getUserAttendanceHistory);
