@@ -2,12 +2,12 @@
 const PDFDocument = require('pdfkit');
 
 /**
- * Generar ACTA de REUNIÓN
+ * Generar ACTA de REUNIÓN (Versión mejorada con decisiones destacadas)
  */
 exports.generateActa = async (event, attendances) => {
     return new Promise((resolve, reject) => {
         try {
-            const doc = new PDFDocument({ margin: 50 });
+            const doc = new PDFDocument({ margin: 50, size: 'LETTER' });
             const buffers = [];
 
             doc.on('data', buffers.push.bind(buffers));
@@ -16,14 +16,27 @@ exports.generateActa = async (event, attendances) => {
                 resolve(pdfData);
             });
 
-            // Encabezado
-            doc.fontSize(20).font('Helvetica-Bold').text('ACTA DE REUNIÓN', { align: 'center' });
-            doc.moveDown();
+            // =============== ENCABEZADO ===============
+            doc.fontSize(22).font('Helvetica-Bold')
+               .fillColor('#1e3a8a')
+               .text('ACTA DE REUNIÓN', { align: 'center' });
+            doc.fillColor('#000000');
+            doc.moveDown(0.3);
+            
+            // Línea decorativa
+            doc.moveTo(100, doc.y).lineTo(500, doc.y).stroke();
+            doc.moveDown(1.5);
 
-            // Información del evento
-            doc.fontSize(12).font('Helvetica-Bold').text('Información General');
-            doc.fontSize(10).font('Helvetica');
-            doc.text(`Título: ${event.title}`);
+            // =============== INFORMACIÓN GENERAL ===============
+            doc.fontSize(14).font('Helvetica-Bold')
+               .fillColor('#374151')
+               .text('INFORMACIÓN GENERAL');
+            doc.fillColor('#000000');
+            doc.moveDown(0.5);
+
+            doc.fontSize(11).font('Helvetica');
+            doc.text(`Título: `, { continued: true }).font('Helvetica-Bold').text(event.title);
+            doc.font('Helvetica');
             doc.text(`Fecha: ${new Date(event.date).toLocaleDateString('es-ES', { 
                 weekday: 'long', 
                 year: 'numeric', 
@@ -32,44 +45,153 @@ exports.generateActa = async (event, attendances) => {
             })}`);
             doc.text(`Hora: ${event.startTime} - ${event.endTime || 'N/A'}`);
             doc.text(`Lugar: ${event.location}`);
-            doc.moveDown();
+            doc.moveDown(0.5);
 
             // Organizador
             if (event.organizer) {
-                doc.fontSize(12).font('Helvetica-Bold').text('Organizado por:');
-                doc.fontSize(10).font('Helvetica');
-                doc.text(`${event.organizer.name} ${event.organizer.apellido || ''}`);
+                doc.fontSize(11).font('Helvetica');
+                doc.text('Organizado por: ', { continued: true })
+                   .font('Helvetica-Bold')
+                   .text(`${event.organizer.name} ${event.organizer.apellido || ''}`);
                 doc.moveDown();
             }
 
-            // Descripción
-            doc.fontSize(12).font('Helvetica-Bold').text('Descripción:');
-            doc.fontSize(10).font('Helvetica');
-            doc.text(event.description, { align: 'justify' });
+            // Línea separadora
+            doc.moveTo(50, doc.y).lineTo(doc.page.width - 50, doc.y)
+               .strokeColor('#e5e7eb').stroke().strokeColor('#000000');
             doc.moveDown();
 
+            // =============== DESCRIPCIÓN ===============
+            doc.fontSize(14).font('Helvetica-Bold')
+               .fillColor('#374151')
+               .text('DESCRIPCIÓN');
+            doc.fillColor('#000000');
+            doc.moveDown(0.5);
+
+            doc.fontSize(11).font('Helvetica')
+               .text(event.description, { align: 'justify' });
+            doc.moveDown();
+
+            // =============== ORDEN DEL DÍA (AGENDA) ===============
+            if (event.agenda && event.agenda.length > 0) {
+                doc.fontSize(14).font('Helvetica-Bold')
+                   .fillColor('#374151')
+                   .text('ORDEN DEL DÍA');
+                doc.fillColor('#000000');
+                doc.moveDown(0.5);
+
+                doc.fontSize(11).font('Helvetica');
+                event.agenda.forEach((item, index) => {
+                    doc.font('Helvetica-Bold')
+                       .text(`${index + 1}. ${item.punto}`);
+                    if (item.descripcion) {
+                        doc.font('Helvetica')
+                           .fillColor('#4b5563')
+                           .text(`   ${item.descripcion}`, { indent: 20 });
+                        doc.fillColor('#000000');
+                    }
+                    doc.moveDown(0.3);
+                });
+                doc.moveDown();
+            }
+
+            // =============== DECISIONES TOMADAS ===============
+            doc.fontSize(14).font('Helvetica-Bold')
+               .fillColor('#7c3aed') // Color morado para destacar
+               .text('DECISIONES TOMADAS', { underline: true });
+            doc.fillColor('#000000');
+            doc.moveDown(0.5);
+
+            if (event.decisions && event.decisions.length > 0) {
+                doc.fontSize(11).font('Helvetica');
+                
+                event.decisions.forEach((dec, index) => {
+                    // Caja de fondo para cada decisión
+                    const boxY = doc.y;
+                    const boxHeight = 60; // Ajustar según necesidad
+                    
+                    // Fondo gris claro
+                    doc.rect(50, boxY, doc.page.width - 100, boxHeight)
+                       .fillAndStroke('#f3f4f6', '#d1d5db');
+                    
+                    // Restaurar posición para texto
+                    doc.y = boxY + 10;
+                    
+                    // Número de decisión
+                    doc.fontSize(12).font('Helvetica-Bold')
+                       .fillColor('#7c3aed')
+                       .text(`DECISIÓN ${index + 1}`, 60, doc.y);
+                    doc.fillColor('#000000');
+                    doc.moveDown(0.5);
+                    
+                    // Texto de la decisión
+                    doc.fontSize(10).font('Helvetica')
+                       .text(dec.decision, 60, doc.y, { 
+                           width: doc.page.width - 120,
+                           align: 'justify' 
+                       });
+                    
+                    // Responsable
+                    if (dec.responsable) {
+                        doc.moveDown(0.3);
+                        doc.fontSize(9).font('Helvetica-Oblique')
+                           .fillColor('#059669')
+                           .text(`✓ Responsable: ${dec.responsable}`, 60);
+                        doc.fillColor('#000000');
+                    }
+                    
+                    doc.y = boxY + boxHeight + 10;
+                });
+                doc.moveDown();
+            } else {
+                doc.fontSize(11).font('Helvetica-Oblique')
+                   .fillColor('#9ca3af')
+                   .text('No se registraron decisiones en esta reunión.');
+                doc.fillColor('#000000');
+                doc.moveDown();
+            }
+
+            // =============== PARTICIPACIÓN ===============
+            doc.fontSize(14).font('Helvetica-Bold')
+               .fillColor('#374151')
+               .text('PARTICIPACIÓN');
+            doc.fillColor('#000000');
+            doc.moveDown(0.5);
+
             // Asistentes
-            doc.fontSize(12).font('Helvetica-Bold').text('Asistentes:');
-            doc.fontSize(10).font('Helvetica');
-            
+            doc.fontSize(12).font('Helvetica-Bold')
+               .fillColor('#059669')
+               .text(`✓ Asistentes (${attendances.filter(a => a.status === 'asistio').length})`);
+            doc.fillColor('#000000');
+            doc.moveDown(0.3);
+
             const asistentes = attendances.filter(a => a.status === 'asistio');
             if (asistentes.length > 0) {
+                doc.fontSize(10).font('Helvetica');
                 asistentes.forEach((att, index) => {
                     const llegada = att.arrivalTime ? ` - Llegada: ${att.arrivalTime}` : '';
-                    doc.text(`${index + 1}. ${att.user.name} ${att.user.apellido}${llegada}`);
+                    doc.text(`   ${index + 1}. ${att.user.name} ${att.user.apellido}${llegada}`);
                 });
             } else {
-                doc.text('No hay asistentes registrados.');
+                doc.fontSize(10).font('Helvetica-Oblique')
+                   .fillColor('#9ca3af')
+                   .text('   No hay asistentes registrados.');
+                doc.fillColor('#000000');
             }
             doc.moveDown();
 
             // Ausentes
             const ausentes = attendances.filter(a => a.status === 'falto');
             if (ausentes.length > 0) {
-                doc.fontSize(12).font('Helvetica-Bold').text('Ausentes:');
+                doc.fontSize(12).font('Helvetica-Bold')
+                   .fillColor('#dc2626')
+                   .text(`✗ Ausentes (${ausentes.length})`);
+                doc.fillColor('#000000');
+                doc.moveDown(0.3);
+
                 doc.fontSize(10).font('Helvetica');
                 ausentes.forEach((att, index) => {
-                    doc.text(`${index + 1}. ${att.user.name} ${att.user.apellido}`);
+                    doc.text(`   ${index + 1}. ${att.user.name} ${att.user.apellido}`);
                 });
                 doc.moveDown();
             }
@@ -77,77 +199,68 @@ exports.generateActa = async (event, attendances) => {
             // Justificados
             const justificados = attendances.filter(a => a.status === 'justificado');
             if (justificados.length > 0) {
-                doc.fontSize(12).font('Helvetica-Bold').text('Ausencias Justificadas:');
+                doc.fontSize(12).font('Helvetica-Bold')
+                   .fillColor('#f59e0b')
+                   .text(`⚠ Ausencias Justificadas (${justificados.length})`);
+                doc.fillColor('#000000');
+                doc.moveDown(0.3);
+
                 doc.fontSize(10).font('Helvetica');
                 justificados.forEach((att, index) => {
-                    doc.text(`${index + 1}. ${att.user.name} ${att.user.apellido}`);
+                    doc.text(`   ${index + 1}. ${att.user.name} ${att.user.apellido}`);
                     if (att.justification) {
-                        doc.text(`   Justificación: ${att.justification}`, { indent: 20 });
+                        doc.font('Helvetica-Oblique')
+                           .fillColor('#6b7280')
+                           .text(`      Justificación: ${att.justification}`);
+                        doc.fillColor('#000000').font('Helvetica');
                     }
                 });
                 doc.moveDown();
             }
 
-            // Agenda
-            if (event.agenda && event.agenda.length > 0) {
-                doc.fontSize(12).font('Helvetica-Bold').text('Orden del Día:');
-                doc.fontSize(10).font('Helvetica');
-                event.agenda.forEach((item, index) => {
-                    doc.text(`${index + 1}. ${item.punto}`);
-                    if (item.descripcion) {
-                        doc.text(`   ${item.descripcion}`, { indent: 20 });
-                    }
-                });
-                doc.moveDown();
-            }
-
-            // Decisiones
-            if (event.decisions && event.decisions.length > 0) {
-                doc.fontSize(12).font('Helvetica-Bold').text('Decisiones Tomadas:');
-                doc.fontSize(10).font('Helvetica');
-                event.decisions.forEach((dec, index) => {
-                    doc.text(`${index + 1}. ${dec.decision}`);
-                    if (dec.responsable) {
-                        doc.text(`   Responsable: ${dec.responsable}`, { indent: 20 });
-                    }
-                });
-                doc.moveDown();
-            }
-
-            // Observaciones
+            // =============== OBSERVACIONES ===============
             if (event.observations) {
-                doc.fontSize(12).font('Helvetica-Bold').text('Observaciones:');
-                doc.fontSize(10).font('Helvetica');
-                doc.text(event.observations, { align: 'justify' });
+                doc.fontSize(14).font('Helvetica-Bold')
+                   .fillColor('#374151')
+                   .text('OBSERVACIONES');
+                doc.fillColor('#000000');
+                doc.moveDown(0.5);
+
+                doc.fontSize(11).font('Helvetica')
+                   .text(event.observations, { align: 'justify' });
                 doc.moveDown();
             }
 
-            // Si hay imagen/video, mencionar
+            // =============== ARCHIVO MULTIMEDIA ===============
             if (event.media && event.media.url) {
-                doc.fontSize(10).font('Helvetica-Oblique');
-                doc.text(`Archivo adjunto: ${event.media.type === 'image' ? 'Imagen' : 'Video'} disponible en el sistema`, { 
-                    align: 'center',
-                    color: '#666666'
-                });
-                doc.moveDown();
+                doc.fontSize(10).font('Helvetica-Oblique')
+                   .fillColor('#6b7280')
+                   .text(`📎 Archivo adjunto: ${event.media.type === 'image' ? 'Imagen' : 'Video'} disponible en el sistema`, { 
+                       align: 'center'
+                   });
+                doc.fillColor('#000000');
+                doc.moveDown(2);
             }
 
-            // Firma
-            doc.moveDown(2);
-            doc.fontSize(10).font('Helvetica');
+            // =============== FIRMA ===============
+            doc.moveDown(3);
+            doc.fontSize(11).font('Helvetica');
             doc.text('_________________________________', { align: 'center' });
             doc.text('Firma del Organizador', { align: 'center' });
             if (event.organizer) {
-                doc.text(`${event.organizer.name} ${event.organizer.apellido || ''}`, { align: 'center' });
+                doc.font('Helvetica-Bold')
+                   .text(`${event.organizer.name} ${event.organizer.apellido || ''}`, { align: 'center' });
             }
 
-            // Footer
-            doc.fontSize(8).text(
-                `Generado el ${new Date().toLocaleString('es-ES')}`,
-                50,
-                doc.page.height - 50,
-                { align: 'center' }
-            );
+            // =============== FOOTER ===============
+            doc.fontSize(8).font('Helvetica-Oblique')
+               .fillColor('#9ca3af')
+               .text(
+                   `Documento generado automáticamente el ${new Date().toLocaleString('es-ES')}`,
+                   50,
+                   doc.page.height - 50,
+                   { align: 'center', width: doc.page.width - 100 }
+               );
 
             doc.end();
         } catch (error) {

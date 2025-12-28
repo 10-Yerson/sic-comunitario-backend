@@ -6,12 +6,6 @@ const { auth, authorize } = require('../middleware/authMiddleware');
 const upload = require('../config/multer');
 
 
-// Ver detalle de cualquier evento (público)
-router.get('/public/:id', eventController.getPublicEventById);
-
-// Ver TODOS los eventos (público)
-router.get('/public', eventController.getPublicEvents);
-
 // Eventos publicos mejorado
 router.get('/comunity', eventController.getEvents);
 
@@ -40,5 +34,10 @@ router.get('/', auth, authorize('admin'), eventController.getEvents);
 router.get('/:id', auth, authorize('admin', 'user'), eventController.getEventById);
 // Eliminar evento (solo admin)
 router.delete('/:id', auth, authorize('admin'), eventController.deleteEvent);
+
+// Gestión de decisiones
+router.put('/:id/decisions', auth, authorize('user'), eventController.updateDecisions);
+router.post('/:id/decisions/add', auth, authorize('user'), eventController.addDecision);
+router.delete('/:id/decisions/:itemId', auth, authorize('user'), eventController.removeDecision);
 
 module.exports = router;

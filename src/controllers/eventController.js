@@ -477,3 +477,117 @@ exports.getPublicEventById = async (req, res) => {
         res.status(500).json({ msg: 'Error del servidor' });
     }
 };
+
+/**
+ * Agregar/actualizar decisiones de una reunión
+ */
+exports.updateDecisions = async (req, res) => {
+    const { decisions } = req.body;
+
+    try {
+        const event = await Event.findById(req.params.id);
+
+        if (!event) {
+            return res.status(404).json({ msg: 'Evento no encontrado' });
+        }
+
+        if (event.type !== 'reunion') {
+            return res.status(400).json({ msg: 'Solo las reuniones pueden tener decisiones' });
+        }
+
+        if (event.organizer.toString() !== req.user.id) {
+            return res.status(403).json({ msg: 'No autorizado para editar esta reunión' });
+        }
+
+        // Validar formato de decisiones
+        if (!Array.isArray(decisions)) {
+            return res.status(400).json({ msg: 'Las decisiones deben ser un array' });
+        }
+
+        // Validar cada decisión
+        for (const item of decisions) {
+            if (!item.decision || typeof item.decision !== 'string') {
+                return res.status(400).json({ msg: 'Cada decisión debe tener un campo "decision" válido' });
+            }
+        }
+
+        event.decisions = decisions;
+        await event.save();
+
+        res.json({ 
+            msg: 'Decisiones actualizadas exitosamente', 
+            event 
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ msg: 'Error del servidor', error: err.message });
+    }
+};
+
+/**
+ * Agregar decisión individual
+ */
+exports.addDecision = async (req, res) => {
+    const { decision, responsable } = req.body;
+
+    try {
+        const event = await Event.findById(req.params.id);
+
+        if (!event) {
+            return res.status(404).json({ msg: 'Evento no encontrado' });
+        }
+
+        if (event.type !== 'reunion') {
+            return res.status(400).json({ msg: 'Solo las reuniones pueden tener decisiones' });
+        }
+
+        if (event.organizer.toString() !== req.user.id) {
+            return res.status(403).json({ msg: 'No autorizado' });
+        }
+
+        if (!decision || decision.trim() === '') {
+            return res.status(400).json({ msg: 'La decisión es requerida' });
+        }
+
+        event.decisions.push({ decision, responsable: responsable || '' });
+        await event.save();
+
+        res.json({ 
+            msg: 'Decisión agregada exitosamente', 
+            decisions: event.decisions 
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ msg: 'Error del servidor' });
+    }
+};
+
+/**
+ * Eliminar decisión
+ */
+exports.removeDecision = async (req, res) => {
+    const { itemId } = req.params;
+
+    try {
+        const event = await Event.findById(req.params.id);
+
+        if (!event) {
+            return res.status(404).json({ msg: 'Evento no encontrado' });
+        }
+
+        if (event.organizer.toString() !== req.user.id) {
+            return res.status(403).json({ msg: 'No autorizado' });
+        }
+
+        event.decisions = event.decisions.filter(item => item._id.toString() !== itemId);
+        await event.save();
+
+        res.json({ 
+            msg: 'Decisión eliminada exitosamente', 
+            decisions: event.decisions 
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ msg: 'Error del servidor' });
+    }
+};
