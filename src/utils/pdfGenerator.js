@@ -654,24 +654,28 @@ exports.generateHistorialPDF = async (user, attendances, stats) => {
                     else if (att.status === 'falto') { statusText = 'FALTÓ'; statusColor = '#dc2626'; }
                     else if (att.status === 'justificado') { statusText = 'JUSTIFICADO'; statusColor = '#d97706'; }
 
-                    // ancho dinámico según texto
-                    const paddingX = 10;
-                    const textWidth = doc.widthOfString(statusText);
-                    const chipWidth = textWidth + paddingX * 2;
+                    if (att.status === 'asistio') {
+                        statusText = 'ASISTIÓ';
+                        statusColor = '#059669';
+                    }
+                    else if (att.status === 'falto') {
+                        statusText = 'FALTÓ';
+                        statusColor = '#dc2626';
+                    }
+                    else if (att.status === 'justificado') {
+                        statusText = 'JUSTIFICADO';
+                        statusColor = '#d97706';
+                    }
 
-                    // fondo del chip
-                    doc.roundedRect(chipX, chipY - 2, chipWidth, 14, 7).fill(statusColor);
-
-                    // texto centrado
+                    // escribir solo el texto en color
                     doc
-                        .fillColor('#ffffff')
+                        .fillColor(statusColor)
                         .font('Helvetica-Bold')
-                        .fontSize(9)
-                        .text(statusText, chipX + paddingX, chipY - 1);
+                        .fontSize(8)
+                        .text(statusText, chipX, chipY);
 
-                    // reset color
+                    // restaurar color
                     doc.fillColor('#000000').font('Helvetica');
-
 
                     if (att.arrivalTime) doc.text(`Hora de llegada: ${att.arrivalTime}`);
                     if (att.departureTime) doc.text(`Hora de salida: ${att.departureTime}`);
