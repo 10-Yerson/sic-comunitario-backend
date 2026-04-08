@@ -3,6 +3,7 @@ const Admin = require('../models/Admin');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { jwtSecret, jwtExpire } = require('../config/jwt');
+const sendEmail = require('../utils/sendEmail');
 
 exports.registerUser = async (req, res) => {
     const { name, apellido, genero, email, password, cedula } = req.body;
@@ -28,7 +29,66 @@ exports.registerUser = async (req, res) => {
         });
 
         await newUser.save();
-        res.status(201).json({ msg: 'User registered successfully' });
+
+        // ✉️ correo
+        await sendEmail({
+            to: email,
+            subject: "Bienvenido al SIC 🎉",
+            html: `
+            <div style="font-family: Arial, sans-serif; background-color: #f4f6f8; padding: 20px;">
+                <div style="max-width: 600px; margin: auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+
+                    <!-- HEADER -->
+                    <div style="background: #1e293b; padding: 25px; text-align: center;">
+                    <h1 style="color: #ffffff; margin: 0;">SIC</h1>
+                    <p style="color: #cbd5f5; margin: 5px 0;">Sistema Integral Comunitario</p>
+                    </div>
+
+                    <!-- BODY -->
+                    <div style="padding: 30px;">
+                    <h2 style="color: #111827;">Hola ${name} ${apellido} 👋</h2>
+
+                    <p style="color: #374151;">
+                        Te damos la bienvenida al <b>Sistema Integral Comunitario (SIC)</b>.
+                    </p>
+
+                    <p style="color: #374151;">
+                        Tu cuenta ha sido creada exitosamente. Ya puedes acceder al sistema y participar en las actividades comunitarias.
+                    </p>
+
+                    <!-- CREDENCIALES -->
+                    <div style="background: #f1f5f9; padding: 20px; border-radius: 10px; margin: 20px 0;">
+                        <h3 style="margin-top: 0; color: #111827;">🔐 Credenciales de acceso</h3>
+                        <p><b>📧 Correo:</b> ${email}</p>
+                        <p><b>🔑 Contraseña:</b> ${password}</p>
+                        <p><b>👤 Rol:</b> Usuario</p>
+                    </div>
+
+                    <!-- BOTÓN -->
+                    <div style="text-align: center; margin: 30px 0;">
+                        <a href="https://sic-comunitario.vercel.app/"
+                        style="background: #2563eb; color: white; padding: 12px 25px; text-decoration: none; border-radius: 8px; font-weight: bold;">
+                        Ingresar al sistema
+                        </a>
+                    </div>
+
+                    <p style="color: #6b7280;">
+                        Gracias por ser parte de tu comunidad 🙌
+                    </p>
+                    </div>
+
+                    <!-- FOOTER -->
+                    <div style="background: #f9fafb; padding: 15px; text-align: center; font-size: 12px; color: #9ca3af;">
+                    © 2026 SIC - Sistema Integral Comunitario
+                    </div>
+
+                </div>
+            </div>
+                `
+        });
+
+        res.status(201).json({ msg: 'Usuario creado y correo enviado 📧' });
+
     } catch (err) {
         console.error(err);
         res.status(500).json({ msg: 'Server error', error: err.message });
@@ -52,13 +112,76 @@ exports.registerAdmin = async (req, res) => {
             cedula,
             genero,
             email,
-            password 
+            password
         });
 
         await newAdmin.save();
 
+        // ✉️ correo
+        await sendEmail({
+            to: email,
+            subject: "Bienvenido Administrador SIC 👑",
+            html: `
+                <div style="font-family: Arial, sans-serif; background-color: #f4f6f8; padding: 20px;">
+                    <div style="max-width: 600px; margin: auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+
+                <!-- HEADER -->
+                    <div style="background: linear-gradient(90deg, #1e293b, #0f172a); padding: 25px; text-align: center;">
+                        <h1 style="color: #ffffff; margin: 0;">SIC ADMIN</h1>
+                        <p style="color: #cbd5f5; margin: 5px 0;">Panel Administrativo</p>
+                    </div>
+
+                <!-- BODY -->
+                <div style="padding: 30px;">
+                    <h2 style="color: #111827;">Hola ${name} ${apellido} 👑</h2>
+
+                    <p style="color: #374151;">
+                        Has sido registrado como <b>Administrador</b> del Sistema Integral Comunitario.
+                    </p>
+
+                    <p style="color: #374151;">
+                        Ahora puedes gestionar la plataforma con acceso completo:
+                    </p>
+
+                    <ul style="color: #374151;">
+                        <li>✔️ Crear eventos y reuniones</li>
+                        <li>✔️ Gestionar usuarios</li>
+                        <li>✔️ Generar reportes y certificados</li>
+                    </ul>
+
+                    <!-- CREDENCIALES -->
+                    <div style="background: #fef3c7; padding: 20px; border-radius: 10px; margin: 20px 0;">
+                        <h3 style="margin-top: 0; color: #111827;">🔐 Credenciales de acceso</h3>
+                        <p><b>📧 Correo:</b> ${email}</p>
+                        <p><b>🔑 Contraseña:</b> ${password}</p>
+                        <p><b>👑 Rol:</b> Administrador</p>
+                    </div>
+
+                    <!-- BOTÓN -->
+                    <div style="text-align: center; margin: 30px 0;">
+                        <a href="https://sic-comunitario.vercel.app/"
+                        style="background: #111827; color: white; padding: 12px 25px; text-decoration: none; border-radius: 8px; font-weight: bold;">
+                        Ir al sistema
+                        </a>
+                    </div>
+
+                    <p style="color: #6b7280;">
+                        Gestiona tu comunidad de forma eficiente 🚀
+                    </p>
+                    </div>
+
+                    <!-- FOOTER -->
+                    <div style="background: #f9fafb; padding: 15px; text-align: center; font-size: 12px; color: #9ca3af;">
+                    © 2026 SIC - Panel Administrativo
+                    </div>
+
+                </div>
+            </div>
+        `
+        });
+
         res.status(201).json({
-            msg: 'Administrador registrado correctamente'
+            msg: 'Administrador registrado y correo enviado 📧'
         });
 
     } catch (err) {
